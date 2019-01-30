@@ -1,0 +1,19 @@
+{
+  "name": "sms-directions",
+  "version": "1.0.0",
+  "description": "directions via sms",
+  "main": "index.js",
+  "scripts": {
+    "dev-server": "node ./src/server.js",
+    "run-ngrok": "cd ~/Documents/projects && ngrok http 1337",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "cyntran",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "express": "^4.16.4",
+    "node-geocoder": "^3.22.0",
+    "twilio": "^3.27.1"
+  }
+}
