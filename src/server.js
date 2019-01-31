@@ -16,6 +16,7 @@ const MessagingResponse = twilio.twiml.MessagingResponse;
 
 const BASE_URL = 'https://api.mapbox.com/directions/v5/mapbox/'
 const MAPBOX_TOKEN = config.mapBoxToken
+const METER_PER_MILE = 1609.34
 
 app.use(bodyParser.urlencoded({ extended: false }))
 
@@ -25,10 +26,10 @@ var options = {
 
 var geocoder = NodeGeocoder(options)
 
-let add1 = '1330 boren ave'
-let add2 = 'bartell drugs'
+let add1 = '1330 boren ave, seattle'
+let add2 = 'safeway, seattle'
 
-// test()
+test()
 async function test () {
   let startPos = await getGeocode(add1)
   let allRoutes = await getAllRoutes(add2)
@@ -38,23 +39,32 @@ async function test () {
     return
   } else {
     let url = createUrl({
-      profile: 'walking/',
+      profile: 'driving/',
       lon1: startPos.lon,
       lat1: startPos.lat,
       lon2: shortestRoute.longitude,
       lat2: shortestRoute.latitude
     })
     let directions = await returnDirections(url)
-    let steps = getSteps(directions).toString().replace(/,/g, '\n')
+    let distanceMeters = await collectDistance(url)
+    let distanceMiles = convertToMiles(distanceMeters)
+    let steps =  'Total Distance: ' + distanceMiles + 'miles\n' +
+    getSteps(directions).toString().replace(/,/g, '\n')
     console.log(steps)
   }
 }
 
 function getSteps (dir) {
   let instructions = []
-  for (let s = 0; s < dir.length; s++) {
-    instructions.push(dir[s].maneuver.instruction)
+  for (let s = 0; s < dir.length - 1; s++) {
+    let distanceMeter = dir[s].distance
+    let distanceMile = convertToMiles(distanceMeter)
+    instructions.push(dir[s].maneuver.instruction +
+      ' for ' + distanceMile + ' mile(s)'
+    )
   }
+  let arrivalMsg = dir[dir.length - 1].maneuver.instruction.replace(/,/g, '')
+  instructions.push(arrivalMsg)
   return instructions
 }
 
@@ -103,7 +113,6 @@ async function collectDistance (url) {
       if (res.code == 'InvalidInput' || res.code == 'NoRoute') {
         return
       } else {
-        console.log('DISTANCE', res.data.routes[0].distance)
         return res.data.routes[0].distance
       }
     })
@@ -139,7 +148,6 @@ async function getClosestRoute (routes, startPos) {
     return
   }
   let shortest = Math.min(...Object.keys(distances))
-  console.log('shortest', shortest)
   return distances[shortest]
 }
 
@@ -154,6 +162,10 @@ async function returnDirections (url) {
     })
 }
 
+function convertToMiles (meters) {
+  return Math.round((meters / METER_PER_MILE) * 10) / 10
+}
+
 app.post('/sms', async (req, res) => {
   var twiml = new MessagingResponse()
   let response
@@ -163,7 +175,8 @@ app.post('/sms', async (req, res) => {
   let shortestRoute = await getClosestRoute(allRoutes, startPos)
   if (req.body.Body.toUpperCase() == 'HELP-SMS') {
       response = 'To get more accurate directions, ' +
-      'please follow this format: \n\n<starting_address>, <city>:<ending_address>, <city>\n\n' +
+      'please follow this format:' +
+      '\n\n<driving/walking>:<starting_address>, <city>:<ending_address>, <city>\n\n' +
       'You can also type in a general location (a store, for instance), ' +
       'but you must include the city in your message. \n\n' +
       "Providing a more accurate starting position will help you find where you're looking for!"
@@ -178,8 +191,11 @@ app.post('/sms', async (req, res) => {
       lon2: shortestRoute.longitude,
       lat2: shortestRoute.latitude
     })
+    let distanceMeters = await collectDistance(url)
+    let distanceMiles = convertToMiles(distanceMeters)
     let directions = await returnDirections(url)
-    response = getSteps(directions).toString().replace(/,/g, '\n')
+      response = 'Total Distance: ' + distanceMiles + 'miles\n' +
+      getSteps(directions).toString().replace(/,/g, '\n')
   }
   twiml.message(response)
   res.writeHead(200, {'Content-Type': 'text/xml'})
