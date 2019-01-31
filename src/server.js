@@ -17,6 +17,7 @@ const MessagingResponse = twilio.twiml.MessagingResponse;
 const BASE_URL = 'https://api.mapbox.com/directions/v5/mapbox/'
 const MAPBOX_TOKEN = config.mapBoxToken
 const METER_PER_MILE = 1609.34
+const METER_PER_THIRD_MILE = 483
 
 app.use(bodyParser.urlencoded({ extended: false }))
 
@@ -26,8 +27,9 @@ var options = {
 
 var geocoder = NodeGeocoder(options)
 
+let add0 = 'driving/'
 let add1 = '1330 boren ave, seattle'
-let add2 = 'safeway, seattle'
+let add2 = 'qfc, seattle'
 
 test()
 async function test () {
@@ -39,7 +41,7 @@ async function test () {
     return
   } else {
     let url = createUrl({
-      profile: 'driving/',
+      profile: add0,
       lon1: startPos.lon,
       lat1: startPos.lat,
       lon2: shortestRoute.longitude,
@@ -48,16 +50,18 @@ async function test () {
     let directions = await returnDirections(url)
     let distanceMeters = await collectDistance(url)
     let distanceMiles = convertToMiles(distanceMeters)
-    let steps =  'Total Distance: ' + distanceMiles + 'miles\n' +
+    let steps =  'Total Distance: ' + distanceMiles + ' miles\n' +
     getSteps(directions).toString().replace(/,/g, '\n')
     console.log(steps)
   }
 }
 
+//TODO: convert small distances back into meters instead of miles
 function getSteps (dir) {
   let instructions = []
   for (let s = 0; s < dir.length - 1; s++) {
     let distanceMeter = dir[s].distance
+    console.log('meters', distanceMeter)
     let distanceMile = convertToMiles(distanceMeter)
     instructions.push(dir[s].maneuver.instruction +
       ' for ' + distanceMile + ' mile(s)'
@@ -170,8 +174,9 @@ app.post('/sms', async (req, res) => {
   var twiml = new MessagingResponse()
   let response
   let addresses = req.body.Body.split(':')
-  let startPos = await getGeocode(addresses[0])
-  let allRoutes = await getAllRoutes(addresses[1])
+  let action = addresses[0].toLowerCase().concat('/')
+  let startPos = await getGeocode(addresses[1])
+  let allRoutes = await getAllRoutes(addresses[2])
   let shortestRoute = await getClosestRoute(allRoutes, startPos)
   if (req.body.Body.toUpperCase() == 'HELP-SMS') {
       response = 'To get more accurate directions, ' +
@@ -185,7 +190,7 @@ app.post('/sms', async (req, res) => {
       "Please text 'HELP-SMS' for instructions on how to format your addresses."
   } else {
     let url = createUrl({
-      profile: 'walking/',
+      profile: action,
       lon1: startPos.lon,
       lat1: startPos.lat,
       lon2: shortestRoute.longitude,
