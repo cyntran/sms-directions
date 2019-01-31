@@ -17,7 +17,7 @@ const MessagingResponse = twilio.twiml.MessagingResponse;
 const BASE_URL = 'https://api.mapbox.com/directions/v5/mapbox/'
 const MAPBOX_TOKEN = config.mapBoxToken
 const METER_PER_MILE = 1609.34
-const METER_PER_THIRD_MILE = 483
+const FT_PER_METER = 3.281
 
 app.use(bodyParser.urlencoded({ extended: false }))
 
@@ -29,7 +29,7 @@ var geocoder = NodeGeocoder(options)
 
 let add0 = 'driving/'
 let add1 = '1330 boren ave, seattle'
-let add2 = 'qfc, seattle'
+let add2 = '658 vashon pl ne, renton'
 
 test()
 async function test () {
@@ -56,15 +56,22 @@ async function test () {
   }
 }
 
-//TODO: convert small distances back into meters instead of miles
+//TODO: Let users decide unit, imperial or metric
 function getSteps (dir) {
   let instructions = []
   for (let s = 0; s < dir.length - 1; s++) {
+    let unit
+    let distanceUnit
     let distanceMeter = dir[s].distance
-    console.log('meters', distanceMeter)
-    let distanceMile = convertToMiles(distanceMeter)
+    if (distanceMeter < 304.8) {
+      unit = 'feet'
+      distanceUnit = convertToFeet(distanceMeter)
+    } else {
+      unit = 'mile(s)'
+      distanceUnit = convertToMiles(distanceMeter)
+    }
     instructions.push(dir[s].maneuver.instruction +
-      ' for ' + distanceMile + ' mile(s)'
+      ' for ' + distanceUnit + ' ' +unit
     )
   }
   let arrivalMsg = dir[dir.length - 1].maneuver.instruction.replace(/,/g, '')
@@ -168,6 +175,10 @@ async function returnDirections (url) {
 
 function convertToMiles (meters) {
   return Math.round((meters / METER_PER_MILE) * 10) / 10
+}
+
+function convertToFeet (meters) {
+  return Math.round(meters * FT_PER_METER)
 }
 
 app.post('/sms', async (req, res) => {
