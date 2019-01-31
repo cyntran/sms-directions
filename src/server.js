@@ -1,4 +1,5 @@
-
+// Currently does not support foreign addresses
+// with special characters
 const config = require('../config.js')
 const accountSid = config.twilioSid
 const authToken = config.twilioToken
@@ -8,10 +9,13 @@ const client = new twilio(accountSid, authToken)
 const NodeGeocoder = require('node-geocoder')
 const bodyParser = require('body-parser')
 const axios = require('axios')
-const port = 1337
+const port = 8080
 
 const app = express()
 const MessagingResponse = twilio.twiml.MessagingResponse;
+
+const BASE_URL = 'https://api.mapbox.com/directions/v5/mapbox/'
+const MAPBOX_TOKEN = config.mapBoxToken
 
 app.use(bodyParser.urlencoded({ extended: false }))
 
@@ -21,73 +25,163 @@ var options = {
 
 var geocoder = NodeGeocoder(options)
 
-var params = {
-  lon: 0,
-  lat: 0,
-  profile: 'walking/',
-  baseUrl: 'https://api.mapbox.com/directions/v5/mapbox/',
-  token: config.mapBoxToken
-}
+let add1 = '1330 boren ave'
+let add2 = 'bartell drugs'
 
-let add1 = 'Qfc'
-let add2 = 'Bartell Drugs'
-
-// let c1 = {lon: -122.161945668981, lat: 47.49320805}
-// let c2 = {lon: -122.3276958, lat: 47.6124208}
-test()
+// test()
 async function test () {
-  // getSteps(await getGeocode(add1), await getGeocode(add2)).then(value => { console.log(value.toString()) })
-  console.log(await getGeocode(add1))
-
-}
-// getSteps(c1, c2).then(value => console.log(value.toString()))
-
-async function getSteps (code1, code2) {
-  let steps = await returnDirections(code1, code2)
-  let instructions = []
-  for (let s = 0; s < steps.length; s++) {
-    if (s == steps.length - 1) {
-      return instructions
-    }
-    instructions.push(steps[s].maneuver.instruction)
+  let startPos = await getGeocode(add1)
+  let allRoutes = await getAllRoutes(add2)
+  let shortestRoute = await getClosestRoute(allRoutes, startPos)
+  if (shortestRoute == undefined || startPos == undefined) {
+    console.log('No available route :(')
+    return
+  } else {
+    let url = createUrl({
+      profile: 'walking/',
+      lon1: startPos.lon,
+      lat1: startPos.lat,
+      lon2: shortestRoute.longitude,
+      lat2: shortestRoute.latitude
+    })
+    let directions = await returnDirections(url)
+    let steps = getSteps(directions).toString().replace(/,/g, '\n')
+    console.log(steps)
   }
 }
 
-//TODO: Return only the longitude & latitude of the
-//closer (filter by city?) location to the starting address
-function getGeocode (add) {
+function getSteps (dir) {
+  let instructions = []
+  for (let s = 0; s < dir.length; s++) {
+    instructions.push(dir[s].maneuver.instruction)
+  }
+  return instructions
+}
+
+function getAllRoutes (add) {
   return geocoder.geocode(add)
     .then((res) => {
-      return {
-        res: res
-        // lon: res[0].longitude,
-        // lat: res[0].latitude
+      if (!res.length) {
+        return
       }
+      return res
     })
     .catch((err) => {
-      console.log(err)
+      console.log('Cannot find all routes for ' +add)
     })
 }
 
-async function returnDirections (coords1, coords2) {
-  let url = params.baseUrl+params.profile+coords1.lon+','+coords1.lat+';'+coords2.lon+','+coords2.lat+'?'+'steps=true&access_token='+params.token
+async function getGeocode (add) {
+  return geocoder.geocode(add)
+    .then((res) => {
+      if (res == undefined || !res.length) {
+        return
+      }
+      return {
+        lon: res[0].longitude,
+        lat: res[0].latitude
+      }
+    })
+    .catch((err) => {
+      console.log('Cannot find geocode for '+add)
+    })
+}
+
+function createUrl (params) {
+  let url =
+    BASE_URL +
+    params.profile +
+    params.lon1 + ',' + params.lat1 +
+    ';' + params.lon2 + ',' + params.lat2 +
+    '?'+'steps=true&access_token=' + MAPBOX_TOKEN
+    return url
+}
+
+async function collectDistance (url) {
+  return await axios.get(url)
+    .then((res) => {
+      if (res.code == 'InvalidInput' || res.code == 'NoRoute') {
+        return
+      } else {
+        console.log('DISTANCE', res.data.routes[0].distance)
+        return res.data.routes[0].distance
+      }
+    })
+    .catch((err) => {
+      console.log('Cannot get distance (meters) ' + err)
+    })
+}
+
+function isEmpty(obj) {
+  return (Object.entries(obj).length === 0 &&
+  obj.constructor === Object)
+}
+
+async function getClosestRoute (routes, startPos) {
+  if (routes == undefined || routes == null) {
+    return
+  }
+  let distances = {}
+  for (let i = 0; i < routes.length; i++) {
+    let url = createUrl({
+      profile: 'walking/',
+      lon1: startPos.lon,
+      lat1: startPos.lat,
+      lon2: routes[i].longitude,
+      lat2: routes[i].latitude
+    })
+    let meters = await collectDistance(url)
+    if (meters !== undefined && meters < 241402) {
+      distances[meters] = routes[i]
+    }
+  }
+  if (isEmpty(distances)) {
+    return
+  }
+  let shortest = Math.min(...Object.keys(distances))
+  console.log('shortest', shortest)
+  return distances[shortest]
+}
+
+async function returnDirections (url) {
   return axios.get(url)
     .then((res) => {
       let steps = res.data.routes[0].legs[0].steps
       return steps
     })
     .catch((err) => {
-      console.log(err)
+      console.log('Cannot get url ' + err)
     })
 }
 
 app.post('/sms', async (req, res) => {
   var twiml = new MessagingResponse()
+  let response
   let addresses = req.body.Body.split(':')
   let startPos = await getGeocode(addresses[0])
-  let endPos = await getGeocode(addresses[1])
-  let message = await getSteps(startPos, endPos).then(arr => { return arr.toString() })
-  twiml.message(message)
+  let allRoutes = await getAllRoutes(addresses[1])
+  let shortestRoute = await getClosestRoute(allRoutes, startPos)
+  if (req.body.Body.toUpperCase() == 'HELP-SMS') {
+      response = 'To get more accurate directions, ' +
+      'please follow this format: \n\n<starting_address>, <city>:<ending_address>, <city>\n\n' +
+      'You can also type in a general location (a store, for instance), ' +
+      'but you must include the city in your message. \n\n' +
+      "Providing a more accurate starting position will help you find where you're looking for!"
+  } else if (shortestRoute == undefined || startPos == undefined) {
+      response = "Sorry, we can't recognize one of your addresses. " +
+      "Please text 'HELP-SMS' for instructions on how to format your addresses."
+  } else {
+    let url = createUrl({
+      profile: 'walking/',
+      lon1: startPos.lon,
+      lat1: startPos.lat,
+      lon2: shortestRoute.longitude,
+      lat2: shortestRoute.latitude
+    })
+    let directions = await returnDirections(url)
+    response = getSteps(directions).toString().replace(/,/g, '\n')
+  }
+  twiml.message(response)
   res.writeHead(200, {'Content-Type': 'text/xml'})
   res.end(twiml.toString())
 })
