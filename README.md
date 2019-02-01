@@ -9,7 +9,7 @@ These directions are made possible by [OpenStreetMap](https://openstreetmap.org)
 and the [MapBox Directions API](https://docs.mapbox.com/api/navigation/#retrieve-directions). 
 
 ## Prerequisites
-You will need to create your own Twilio ```SID```, ```token```, ```phone number```, MapBox token, as well as setting up your own webhook URL. 
+You will need to create your own <i>Twilio</i> ```SID```, ```token```, ```phone number```, <i>MapBox</i> ```token```, as well as setting up your own webhook URL. 
 
 <b>Note: Twilio gives you one free phone number and a certain amount of money to spend as part of their free trial, 
 so use that to your advantage!</b>
