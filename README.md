@@ -38,6 +38,6 @@ Feel free to make contribution.
 You may also contact me through my email for suggestions and/or feedback. 
 
 ## License
-This project is licensed under [GNU General Public License (GPL)](../blob/master/license.txt) version 2 or later
+This project is licensed under [GNU General Public License (GPL)](/LICENSE.txt) version 2 or later
 
 
