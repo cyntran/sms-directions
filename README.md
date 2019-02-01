@@ -32,7 +32,7 @@ module.exports = {
 Run the code. 
 
 ## Contributing
-Feel free to make contribution. 
+Feel free to make any contributions to this project by submitting a pull request or issue I can review. 
 
 ## Support
 You may also contact me through my email for suggestions and/or feedback. 
