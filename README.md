@@ -31,6 +31,9 @@ module.exports = {
 ```
 Run the code. 
 
+## Usage
+Will update this soon.
+
 ## Contributing
 Feel free to make any contributions to this project by submitting a pull request or issue I can review. 
 
@@ -38,6 +41,6 @@ Feel free to make any contributions to this project by submitting a pull request
 You may also contact me through my email for suggestions and/or feedback. 
 
 ## License
-This project is licensed under [GNU General Public License (GPL)](/LICENSE.txt) version 2 or later
+This project is licensed under [GNU General Public License (GPL)](/LICENSE.txt) version 2 or later.
 
 
