@@ -17,7 +17,7 @@ so use that to your advantage!</b>
 For my code, I'm using [```ngrok```](https://ngrok.com/), which allows me to use localhost on a public domain.  
 
 ## Installing
-After you've configured your Twilio account, clone the project:
+After you've configured your Twilio account and MapBox account, clone the project:
 ```bash
 git clone https://github.com/cyntran/sms-directions.git
 ``` 
