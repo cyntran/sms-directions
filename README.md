@@ -32,7 +32,28 @@ module.exports = {
 Run the code. 
 
 ## Usage
-Will update this soon.
+<h3>How it works:</h3>
+
+The user can search for directions by texting the number using the following formatted command:
+
+<sub><b>```<distance unit(metric/imperial)>:<action(walking/driving)>:<startingAddress, city>:<destinationAddress, city>```</b></sub>
+
++ <i><b>Distance unit</b></i> can either be in metric or imperial (if you don't specify, it <b>defaults to 'imperial'</b>).
+
++ <i><b>Action</b></i> can either be <b>walking</b> or <b>driving</b>.
+
++ And specifying the city will give you better results.
+
+However, if you don't know the street address of your destination, you could type the place like so: ```costco, seattle```
+And it will process that just fine, as long as there's a Costco in that city or nearby. Otherwise you may receive directions to a Costco in a completely different city.
+
+<h3>Examples:</h3>
+
+| Command                                                          | Output                          | 
+| -----------------------------------------------------------------|:-------------------------------:|
+| `metric:walking:400 Broad St, Seattle:1124 Pike St, Seattle`     | https://i.imgur.com/ZeRsJyP.png | 
+| `imperial:driving:seattle space needle:seattle reserve roastery` | https://i.imgur.com/eRLkpV3.png | 
+| `walking:seattle reserve roastery:raygun, seattle`               | https://i.imgur.com/51QiGLn.png |  
 
 ## Contributing
 Feel free to make any contributions to this project by submitting a pull request or issue I can review. 
