@@ -14,7 +14,7 @@ const PORT = 8080
 
 app.use(bodyParser.urlencoded({ extended: false }))
 
-let textSMS = 'walking:oo:oo'
+let textSMS = 'walking:seattle reserve roastery:raygun, seattle'
 
 test()
 async function test () {
