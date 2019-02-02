@@ -63,7 +63,7 @@ function getAllRoutes (add) {
     })
 }
 
-async function getGeocode (add) {
+ function getGeocode (add) {
   return geocoder.geocode(add)
     .then((res) => {
       if (res == undefined || !res.length) {
@@ -134,7 +134,7 @@ async function getClosestRoute (routes, startPos, action) {
   return distances[shortest]
 }
 
-async function returnDirections (url) {
+function returnDirections (url) {
   return axios.get(url)
     .then((res) => {
       let steps = res.data.routes[0].legs[0].steps
@@ -215,14 +215,12 @@ async function validateInput (unit, action, startPos, endPos) {
 }
 
 async function isValidInput (userRequest) {
-  let unit = 'imperial'
   let input = userRequest.split(':')
   if (input.length < 3 || input.length > 4) {
     return null
   }
   let adjusted = adjustInput(input)
-  unit = adjusted.unit
-  let action = adjusted.action, startPos = adjusted.startPos, endPos = adjusted.endPos
+  let unit = adjusted.unit, action = adjusted.action, startPos = adjusted.startPos, endPos = adjusted.endPos
   return await validateInput(unit, action, startPos, endPos)
 }
 
