@@ -34,7 +34,7 @@ Run the code.
 ## Usage
 <h3>How it works:</h3>
 
-The user can search for directions by texting the number using the following formatted command:
+<i>After you've set up your phone number and started the server,</i> you can search for directions by texting the number using the following formatted command:
 
 <sub><b>```<distance unit(metric/imperial)>:<action(walking/driving)>:<startingAddress, city>:<destinationAddress, city>```</b></sub>
 
